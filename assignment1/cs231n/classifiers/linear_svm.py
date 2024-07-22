@@ -36,6 +36,8 @@ def svm_loss_naive(W, X, y, reg):
                 continue
             margin = scores[j] - correct_class_score + 1  # note delta = 1
             if margin > 0:
+                dW[:, j] += X[i]
+                dW[:, y[i]] -= X[i] 
                 loss += margin
 
     # Right now the loss is a sum over all training examples, but we want it
@@ -46,7 +48,6 @@ def svm_loss_naive(W, X, y, reg):
     loss += reg * np.sum(W * W)
 
     #############################################################################
-    # TODO:                                                                     #
     # Compute the gradient of the loss function and store it dW.                #
     # Rather that first computing the loss and then computing the derivative,   #
     # it may be simpler to compute the derivative at the same time that the     #
@@ -55,7 +56,8 @@ def svm_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dW /= num_train
+    dW += 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -72,18 +74,26 @@ def svm_loss_vectorized(W, X, y, reg):
     dW = np.zeros(W.shape)  # initialize the gradient as zero
 
     #############################################################################
-    # TODO:                                                                     #
     # Implement a vectorized version of the structured SVM loss, storing the    #
     # result in loss.                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = X.dot(W)
+    correct_scores = scores[np.arange(X.shape[0]), y].reshape(-1, 1) # adds axis
+    margins = scores - correct_scores + 1
+
+    # set the correct answers with a score of 0 automatically
+    margins[np.arange(X.shape[0]), y] = 0
+    margins = np.maximum(0, margins)
+
+    loss = np.sum(margins) / X.shape[0]
+    loss += reg * np.sum(W * W)
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     #############################################################################
-    # TODO:                                                                     #
     # Implement a vectorized version of the gradient for the structured SVM     #
     # loss, storing the result in dW.                                           #
     #                                                                           #
@@ -93,7 +103,25 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # reuse margins in order to make sure that we can use the dot product of this 
+    # in order to place in our gradients
+    bin = margins
+
+    # when the margin is 0, we know that it doesn't contribute to the gradient
+    bin[bin > 0] = 1
+
+    # when the margin is greater than 0, we know that it contributes X[i] to the gradient, 
+    # which in this case resolves to 0 (since we are using it in the dot product)
+    row_sum = np.sum(bin, axis = 1)
+
+    # for all where the margin was greater than 0, we want to sum them up and subtract
+    # from the correct point to enable gradient descent
+    bin[np.arange(X.shape[0]), y] -= row_sum
+
+    dW = X.T.dot(bin) / X.shape[0]
+    dW += 2 * reg * dW
+
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
