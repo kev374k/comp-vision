@@ -34,7 +34,9 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    for i in X:
+        X[i,:] = np.exp(X[i,:])/np.sum(np.exp(X[i,:]))
+        loss += -np.log(X[y[i]])
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 

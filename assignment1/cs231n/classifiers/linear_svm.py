@@ -119,9 +119,7 @@ def svm_loss_vectorized(W, X, y, reg):
     bin[np.arange(X.shape[0]), y] -= row_sum
 
     dW = X.T.dot(bin) / X.shape[0]
-    dW += 2 * reg * dW
-
-
+    dW += 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
