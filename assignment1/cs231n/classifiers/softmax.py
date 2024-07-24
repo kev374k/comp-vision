@@ -34,9 +34,31 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    for i in X:
-        X[i,:] = np.exp(X[i,:])/np.sum(np.exp(X[i,:]))
-        loss += -np.log(X[y[i]])
+    n = X.shape[0]
+    for i in range(n):
+        # X[:, i] represents an individual batch of data
+        wx = np.dot(X[i, :], W)
+
+        # removing numeric instability
+        wx -= np.max(wx)
+
+        sum_wx = np.sum(np.exp(wx))
+
+        # when deriving the softmax function, we get loss = -fyi + log(sum(efj))
+        loss += -wx[y[i]] + np.log(sum_wx)
+        
+        for j in range(W.shape[1]):
+            # For the derivative, we see that when fyi = fj, the result is (p - 1) * x, otherwise it is just p * x
+            p = np.exp(wx[j]) / sum_wx
+            dW[:, j] += (p - (j == y[i])) * X[i, :]
+
+    # divide by the number of examples
+    loss /= n
+    dW /= n
+
+    # regularization
+    loss += 0.5 * reg * np.sum(W * W)
+    dW += reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -61,8 +83,25 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = X.shape[0]
+    scores = X @ W
+    scores -= np.max(scores, axis = 1, keepdims = True)
+    out = np.exp(scores)
+    sum_wx = out / np.sum(out, axis = 1, keepdims = True)
 
+    loss -= np.sum(np.log(sum_wx[np.arange(num_train), y]))
+    loss /= num_train
+    loss += 0.5 ** reg * np.sum(W**2)
+
+    dout = np.copy(sum_wx)
+
+    # (N, C)
+    dout[np.arange(num_train), y] -= 1
+
+    # (D, N) x (N, C)
+    dW = X.T @ dout
+    dW /= num_train
+    dW += reg * W
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
