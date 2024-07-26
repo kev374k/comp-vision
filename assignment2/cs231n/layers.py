@@ -21,11 +21,11 @@ def affine_forward(x, w, b):
     """
     out = None
     ###########################################################################
-    # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    N = x.shape[0]
+    x_reshaped = x.reshape(N, np.prod(x.shape[1:]))
+    out = x_reshaped @ w + b
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -53,11 +53,16 @@ def affine_backward(dout, cache):
     x, w, b = cache
     dx, dw, db = None, None, None
     ###########################################################################
-    # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx = dout @ w.T
+    dx = dx.reshape(x.shape)
+
+    x2 = x.reshape(x.shape[0], np.prod(x.shape[1:]))
+    dw = x2.T @ dout
+
+    db = dout.sum(axis = 0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -78,11 +83,10 @@ def relu_forward(x):
     """
     out = None
     ###########################################################################
-    # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = np.maximum(x, 0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -104,11 +108,10 @@ def relu_backward(dout, cache):
     """
     dx, x = None, cache
     ###########################################################################
-    # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx = (x > 0) * dout
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -133,11 +136,22 @@ def softmax_loss(x, y):
     loss, dx = None, None
 
     ###########################################################################
-    # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    N = x.shape[0]
+    exp_scores = np.exp(x - np.max(x, axis = 1, keepdims = True))
+    softmaxed_scores = exp_scores / np.sum(exp_scores, axis = 1, keepdims = True)
 
-    pass
+    # find the average negative log-likelihood
+    loss = -np.sum(np.log(softmaxed_scores[np.arange(N), y])) 
+    loss = 0 if loss == 0 else loss/N
+
+    # loss = -fy_i + sum(ej)
+    # dloss/dy_i = -1 + e^y_i/sum(e_j)
+    # dloss/dj = e^j / sum(e_j)
+    dx = softmaxed_scores.copy()
+    dx[np.arange(N), y] -= 1
+    dx /= N
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
