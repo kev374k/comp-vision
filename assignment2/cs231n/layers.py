@@ -205,7 +205,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     running_mean = bn_param.get("running_mean", np.zeros(D, dtype=x.dtype))
     running_var = bn_param.get("running_var", np.zeros(D, dtype=x.dtype))
 
-    out, cache = None, None
+    out, cache = None, {}
     if mode == "train":
         #######################################################################
         # TODO: Implement the training-time forward pass for batch norm.      #
@@ -230,7 +230,39 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        N, D = x.shape
+
+        #step1: calculate mean
+        mu = np.mean(x, axis = 0)
+
+        #step2: subtract mean vector of every trainings example
+        xmu = x - mu
+
+        #step3: following the lower branch - calculation denominator
+        sq = xmu ** 2
+
+        #step4: calculate variance
+        var = np.mean(sq, axis = 0)
+
+        #step5: add eps for numerical stability, then sqrt
+        sqrtvar = np.sqrt(var + eps)
+
+        #step6: invert sqrtwar
+        ivar = 1./sqrtvar
+
+        #step7: execute normalization
+        xhat = xmu * ivar
+
+        #step8: Nor the two transformation steps
+        gammax = gamma * xhat
+
+        #step9
+        out = gammax + beta
+
+        #store intermediate
+        cache = (xhat,gamma,xmu,ivar,sqrtvar,var,eps)
+
+  
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -245,7 +277,38 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        N, D = x.shape
+
+        #step1: calculate mean
+        mu = np.mean(x, axis = 0)
+
+        #step2: subtract mean vector of every trainings example
+        xmu = x - mu
+
+        #step3: following the lower branch - calculation denominator
+        sq = xmu ** 2
+
+        #step4: calculate variance
+        var = np.mean(sq, axis = 0)
+
+        #step5: add eps for numerical stability, then sqrt
+        sqrtvar = np.sqrt(var + eps)
+
+        #step6: invert sqrtwar
+        ivar = 1./sqrtvar
+
+        #step7: execute normalization
+        xhat = xmu * ivar
+
+        #step8: Nor the two transformation steps
+        gammax = gamma * xhat
+
+        #step9
+        out = gammax + beta
+
+        #store intermediate
+        cache = (xhat,gamma,xmu,ivar,sqrtvar,var,eps)
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -285,8 +348,40 @@ def batchnorm_backward(dout, cache):
     # might prove to be helpful.                                              #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    xhat,gamma,xmu,ivar,sqrtvar,var,eps = cache
+    N, D = dout.shape
 
-    pass
+    # step 9
+    dbeta = np.sum(dout, axis = 0)
+
+    # step 8
+    dgamma = np.sum(dout * xhat, axis = 0)
+    dxhat = dout * gamma
+
+    # step 7
+    divar = np.sum(dxhat * xmu, axis = 0)
+    dxmu1 = dxhat * ivar
+
+    # step 6
+    dsqrt = divar * -1 / (sqrtvar ** 2)
+
+    # step 5
+    dsum2 = dsqrt / (2 * np.sqrt(var + eps))
+
+    # step 4
+    dsqr = np.ones((N, D)) / N * dsum2
+
+    # step 3
+    dxmu2 = dsqr * 2 * xmu
+    dxmu = (dxmu1 + dxmu2)
+
+    # step 2
+    dsum1 = np.sum(dxmu1 + dxmu2, axis = 0) * -1
+
+    # step 1
+    dx = np.ones((N, D)) / N * dsum1
+    dx += dxmu
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
