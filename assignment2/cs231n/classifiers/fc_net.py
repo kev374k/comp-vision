@@ -76,18 +76,26 @@ class FullyConnectedNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # loop through all of the hidden dimensions
+        input_dim = 0
         for i in range(self.num_layers - 1):
             if i == 0:
                 # first hidden layer (from the input dimension)
+                input_dim, output_dim = input_dim, hidden_dims[i]
+                self.params[f"W{i + 1}"] = (
+                    np.random.randn(input_dim, output_dim) * weight_scale
+                )
+                
+            else:
+                input_dim = hidden_dims[i - 1]
                 self.params[f"W{i + 1}"] = (
                     np.random.randn(input_dim, hidden_dims[i]) * weight_scale
                 )
-            else:
-                self.params[f"W{i + 1}"] = (
-                    np.random.randn(hidden_dims[i - 1], hidden_dims[i]) * weight_scale
-                )
+                
 
             self.params[f"b{i + 1}"] = (np.zeros(hidden_dims[i])).reshape(1, -1)
+
+            if self.normalization == "batchnorm":
+                self.params[f"gamma{i + 1}"] = np.ones(hidden_dims[i])
         
         # output layer
         self.params[f"W{self.num_layers}"] = (
@@ -181,6 +189,8 @@ class FullyConnectedNet(object):
                 scores, self.params[f"W{layer + 1}"], self.params[f"b{layer + 1}"]
             )
             # TODO: batch/layer norm implementation
+
+
 
             # RELU
             scores, self.cache[f"relu{layer + 1}"] = relu_forward(scores)
