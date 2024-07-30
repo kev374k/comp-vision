@@ -526,7 +526,7 @@ def layernorm_backward(dout, cache):
     """
     dx, dgamma, dbeta = None, None, None
     ###########################################################################
-    # TODO: Implement the backward pass for layer norm.                       #
+    # Implement the backward pass for layer norm.                       #
     #                                                                         #
     # HINT: this can be done by slightly modifying your training-time         #
     # implementation of batch normalization. The hints to the forward pass    #
@@ -539,13 +539,13 @@ def layernorm_backward(dout, cache):
 
     dbeta = np.sum(dout, axis=0)
     dgamma = np.sum(dout * xhat, axis=0)
+    dxhat = dout * gamma
 
     dx = (
-        np.sum(dout * gamma * -xmu * (ivar ** 3), axis=1, keepdims = True)
-        / D * xmu
+        -np.sum(dxhat * xmu, axis=1, keepdims = True) * ivar / D * xmu / sqrtvar ** 2
         + dout * gamma / sqrtvar
   )
-    dx += np.sum(dout * gamma * -1 / sqrtvar, axis=1, keepdims = True) / D
+    dx += np.sum(dxhat * -ivar, axis=1, keepdims = True) / D
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
