@@ -205,7 +205,9 @@ class FullyConnectedNet(object):
             # RELU
             scores, self.cache[f"relu{layer + 1}"] = relu_forward(scores)
 
-            # TODO: dropout implementation
+            # Dropout
+            if self.use_dropout:
+                scores, self.cache[f"dropout{layer + 1}"] = dropout_forward(scores, self.dropout_param)
 
         scores, self.cache[f"affine{self.num_layers}"] = affine_forward(
             scores,
@@ -260,7 +262,9 @@ class FullyConnectedNet(object):
         grads[f"W{self.num_layers}"] += self.reg * self.params[f"W{self.num_layers}"]
 
         for i in range(self.num_layers - 1, 0, -1):
-            # TODO: Implement Dropout
+            # Dropout Backward
+            if self.use_dropout:
+                dw = dropout_backward(dw, self.cache[f"dropout{i}"])
 
             # RELU backward
             dw = relu_backward(dw, self.cache[f"relu{i}"])
