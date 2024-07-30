@@ -208,7 +208,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     out, cache = None, {}
     if mode == "train":
         #######################################################################
-        # TODO: Implement the training-time forward pass for batch norm.      #
+        # Implement the training-time forward pass for batch norm.      #
         # Use minibatch statistics to compute the mean and variance, use      #
         # these statistics to normalize the incoming data, and scale and      #
         # shift the normalized data using gamma and beta.                     #
@@ -262,6 +262,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #store intermediate
         cache = (xhat,gamma,xmu,ivar,sqrtvar,var,eps)
 
+        running_mean = momentum * running_mean + (1 - momentum) * mu
+        running_var = momentum * running_var + (1 - momentum) * var
   
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -270,7 +272,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
     elif mode == "test":
         #######################################################################
-        # TODO: Implement the test-time forward pass for batch normalization. #
+        # Implement the test-time forward pass for batch normalization. #
         # Use the running mean and variance to normalize the incoming data,   #
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
@@ -280,7 +282,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         N, D = x.shape
 
         #step1: calculate mean
-        mu = np.mean(x, axis = 0)
+        mu = running_mean
 
         #step2: subtract mean vector of every trainings example
         xmu = x - mu
@@ -289,7 +291,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         sq = xmu ** 2
 
         #step4: calculate variance
-        var = np.mean(sq, axis = 0)
+        var = running_var
 
         #step5: add eps for numerical stability, then sqrt
         sqrtvar = np.sqrt(var + eps)
@@ -342,7 +344,7 @@ def batchnorm_backward(dout, cache):
     """
     dx, dgamma, dbeta = None, None, None
     ###########################################################################
-    # TODO: Implement the backward pass for batch normalization. Store the    #
+    # Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     # Referencing the original paper (https://arxiv.org/abs/1502.03167)       #
     # might prove to be helpful.                                              #
@@ -406,7 +408,7 @@ def batchnorm_backward_alt(dout, cache):
     """
     dx, dgamma, dbeta = None, None, None
     ###########################################################################
-    # TODO: Implement the backward pass for batch normalization. Store the    #
+    # Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     #                                                                         #
     # After computing the gradient with respect to the centered inputs, you   #
@@ -420,14 +422,8 @@ def batchnorm_backward_alt(dout, cache):
     dbeta = np.sum(dout, axis = 0)
     dgamma = np.sum(dout * xhat, axis = 0)
 
-    # dsigma = -(xmu)/(sqrtvar ** 2)
-    # dv = 1/(2 * sqrtvar)
-    # dmu = -1 / sqrtvar
-
-    print(xmu.shape)
-
     # don't forget to add the path between x and y itself: dout * gamma/sqrtvar
-    dx = np.sum(dout * gamma * -xmu/var, axis = 0)/(2 *sqrtvar) * 2/xhat.shape[0] * xmu + dout * gamma/sqrtvar
+    dx = np.sum(dout * gamma * -xmu * ivar ** 3, axis = 0)/xhat.shape[0] * xmu + dout * gamma/sqrtvar
     dx += np.sum(dout * gamma * -1/sqrtvar, axis = 0)/xhat.shape[0]
 
 
@@ -463,7 +459,7 @@ def layernorm_forward(x, gamma, beta, ln_param):
     out, cache = None, None
     eps = ln_param.get("eps", 1e-5)
     ###########################################################################
-    # TODO: Implement the training-time forward pass for layer norm.          #
+    # Implement the training-time forward pass for layer norm.          #
     # Normalize the incoming data, and scale and  shift the normalized data   #
     #  using gamma and beta.                                                  #
     # HINT: this can be done by slightly modifying your training-time         #
@@ -474,7 +470,37 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, D = x.shape
+
+    #step1: calculate mean
+    mu = np.mean(x, axis = 1, keepdims = True)
+
+    #step2: subtract mean vector of every trainings example
+    xmu = x - mu
+
+    #step3: following the lower branch - calculation denominator
+    sq = xmu ** 2
+
+    #step4: calculate variance
+    var = np.mean(sq, axis = 1, keepdims = True)
+
+    #step5: add eps for numerical stability, then sqrt
+    sqrtvar = np.sqrt(var + eps)
+
+    #step6: invert sqrtwar
+    ivar = 1./sqrtvar
+
+    #step7: execute normalization
+    xhat = xmu * ivar
+
+    #step8: Nor the two transformation steps
+    gammax = gamma * xhat + beta
+
+    #step9
+    out = gammax
+
+    #store intermediate
+    cache = (xhat,gamma,xmu,ivar,sqrtvar,var,eps)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -508,7 +534,18 @@ def layernorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    xhat, gamma, xmu, ivar, sqrtvar, var, eps = cache
+    N, D = dout.shape
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * xhat, axis=0)
+
+    dx = (
+        np.sum(dout * gamma * -xmu * (ivar ** 3), axis=1, keepdims = True)
+        / D * xmu
+        + dout * gamma / sqrtvar
+  )
+    dx += np.sum(dout * gamma * -1 / sqrtvar, axis=1, keepdims = True) / D
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
