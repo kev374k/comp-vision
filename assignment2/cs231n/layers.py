@@ -423,8 +423,9 @@ def batchnorm_backward_alt(dout, cache):
     dgamma = np.sum(dout * xhat, axis = 0)
 
     # don't forget to add the path between x and y itself: dout * gamma/sqrtvar
-    dx = np.sum(dout * gamma * -xmu * ivar ** 3, axis = 0)/xhat.shape[0] * xmu + dout * gamma/sqrtvar
-    dx += np.sum(dout * gamma * -1/sqrtvar, axis = 0)/xhat.shape[0]
+    dxhat = dout * gamma
+    dx = dxhat - np.mean(dxhat, axis = 0) - xhat * np.mean(xhat * dxhat, axis = 0)
+    dx /= (sqrtvar)
 
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -541,11 +542,9 @@ def layernorm_backward(dout, cache):
     dgamma = np.sum(dout * xhat, axis=0)
     dxhat = dout * gamma
 
-    dx = (
-        -np.sum(dxhat * xmu, axis=1, keepdims = True) * ivar / D * xmu / sqrtvar ** 2
-        + dout * gamma / sqrtvar
-  )
-    dx += np.sum(dxhat * -ivar, axis=1, keepdims = True) / D
+
+    dx = dxhat - np.mean(dxhat, axis = 1, keepdims = True) - xhat * np.mean(dxhat * xhat, axis = 1, keepdims = True)
+    dx /= sqrtvar
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
