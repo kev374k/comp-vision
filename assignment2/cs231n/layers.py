@@ -678,17 +678,36 @@ def conv_forward_naive(x, w, b, conv_param):
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    N, C, H, W = x.shape
+    F, _, HH, WW  = w.shape
 
+    stride, pad = conv_param['stride'], conv_param['pad']
+
+    h_prime = int(1 + (H + 2 * pad - HH) / stride)
+    w_prime = int(1 + (W + 2 * pad - WW) / stride)
+
+    out = np.zeros((N, F, h_prime, w_prime))
 
     # for each filter, we want to take the dot product of the filter's weights
     # and the hh x ww area of each image.
-    for i in range(w.shape[0]):
-        cur_filter = w[i]
-        for pic_num in range(x.shape[0]):
-            cur_pic = x[pic_num]
-            padded_pic = np.pad(cur_pic, conv_param['pad'])
-            activation_map = cur_filter.T @ pad_x[i] + b
+    
+    for pic_num in range(N):
+        cur_pic = x[pic_num, :, :, :]
 
+        # (C, h_prime, w_prime)
+        padded_pic = np.pad(cur_pic, ((0, 0), (pad, pad), (pad, pad)))
+
+        # looping through each filter
+        for f in range(F):
+          # get the specific filter
+          current_filter = w[f, :, :, :].flatten()
+          for h_p in range(h_prime):
+              for w_p in range(w_prime):
+                  # get the window of the padded picture that we want to multiply by the filters
+                  h1, h2 = h_p * stride, h_p * stride + HH
+                  w1, w2 = w_p * stride, w_p * stride + WW
+                  window = padded_pic[:, h1:h2, w1:w2].flatten()
+                  out[pic_num, f, h_p, w_p] = current_filter @ window + b[f]
         
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
