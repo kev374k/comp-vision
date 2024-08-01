@@ -674,12 +674,22 @@ def conv_forward_naive(x, w, b, conv_param):
     """
     out = None
     ###########################################################################
-    # TODO: Implement the convolutional forward pass.                         #
+    # Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+
+    # for each filter, we want to take the dot product of the filter's weights
+    # and the hh x ww area of each image.
+    for i in range(w.shape[0]):
+        cur_filter = w[i]
+        for pic_num in range(x.shape[0]):
+            cur_pic = x[pic_num]
+            padded_pic = np.pad(cur_pic, conv_param['pad'])
+            activation_map = cur_filter.T @ pad_x[i] + b
+
+        
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
