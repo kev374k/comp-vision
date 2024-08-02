@@ -849,7 +849,34 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, pool_param = cache
+    pool_height, pool_width, stride = (
+        pool_param["pool_height"],
+        pool_param["pool_width"],
+        pool_param["stride"],
+    )
+    N, C, H, W = x.shape
+    _, _, H_prime, W_prime = dout.shape
+
+    dx = np.zeros_like(x)
+
+    for n in range(N):
+        cur_pic = x[n, :, :, :]
+        for h_p in range(H_prime):
+            for w_p in range(W_prime):
+                h1, h2 = h_p * stride, h_p * stride + pool_height 
+                w1, w2 = w_p * stride, w_p * stride + pool_width
+
+                # with np.amax, we want to fill everything that isn't a max with 0
+                current_pool = cur_pic[:, h1:h2, w1:w2]
+                max_values = np.amax(current_pool, axis=(1, 2), keepdims = True)
+                
+                # (C, HH, WW)
+                mask = (current_pool == max_values)
+
+                # (1, C, HH, WW) -> (C, HH, WW) * (C, 1, 1)
+                dx[n, :, h1:h2, w1:w2] += mask * dout[n, :, h_p, w_p][:, None, None]
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
