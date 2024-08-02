@@ -47,7 +47,7 @@ class ThreeLayerConvNet(object):
         self.dtype = dtype
 
         ############################################################################
-        # TODO: Initialize weights and biases for the three-layer convolutional    #
+        #  Initialize weights and biases for the three-layer convolutional    #
         # network. Weights should be initialized from a Gaussian centered at 0.0   #
         # with standard deviation equal to weight_scale; biases should be          #
         # initialized to zero. All weights and biases should be stored in the      #
@@ -63,7 +63,27 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # conv - relu - 2x2 max pool - affine - relu - affine - softmax
+
+        C, H, W = input_dim
+
+        # convolutional weights should be of size (F, C, HH, WW), bias -> (F, )
+        self.params["W1"] = (
+            np.random.randn(num_filters, C, filter_size, filter_size) * weight_scale
+        )
+        self.params["b1"] = np.zeros((1, num_filters))
+
+        # after a 2x2 max pool, the affine layer should be 4x smaller (2 on each side)
+        # result is -> (N, F, H, W) -> (N, F, 0.5H, 0.5W)
+        # hidden affine - (D, M), biases = (M, )
+        self.params["W2"] = (
+            np.random.randn(0.25 * H * W * num_filters, hidden_dim) * weight_scale
+        )
+        self.params["b2"] = np.zeros((1, hidden_dim))
+
+        # output = (N, M)
+        self.params["W3"] = np.random.randn(hidden_dim, num_classes) * weight_scale
+        self.params["b3"] = np.zeros((1, num_classes))
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
