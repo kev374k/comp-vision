@@ -732,7 +732,6 @@ def conv_backward_naive(dout, cache):
     """
     dx, dw, db = None, None, None
     ###########################################################################
-    # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -804,11 +803,28 @@ def max_pool_forward_naive(x, pool_param):
     """
     out = None
     ###########################################################################
-    # TODO: Implement the max-pooling forward pass                            #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    N, C, H, W = x.shape
+    pool_height, pool_width, stride = (
+        pool_param["pool_height"],
+        pool_param["pool_width"],
+        pool_param["stride"],
+    )
 
-    pass
+    H_prime = int(1 + (H - pool_height) / stride)
+    W_prime = int(1 + (W - pool_width) / stride)
+
+    out = np.zeros((N, C, H_prime, W_prime))
+    for n in range(N):
+      cur_pic = x[n, :, :, :]
+      for h_p in range(H_prime):
+          for w_p in range(W_prime):
+              h1, h2 = h_p * stride, h_p * stride + pool_height 
+              w1, w2 = w_p * stride, w_p * stride + pool_width
+
+              out[n, :, h_p, w_p] = np.amax(cur_pic[:, h1:h2, w1:w2], axis = (1, 2))
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -830,7 +846,6 @@ def max_pool_backward_naive(dout, cache):
     """
     dx = None
     ###########################################################################
-    # TODO: Implement the max-pooling backward pass                           #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
