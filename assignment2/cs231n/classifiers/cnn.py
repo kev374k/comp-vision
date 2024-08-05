@@ -113,7 +113,7 @@ class ThreeLayerConvNet(object):
         # pass pool_param to the forward pass for the max-pooling layer
         pool_param = {"pool_height": 2, "pool_width": 2, "stride": 2}
 
-        scores = None
+        scores, cache = 0, {}
         ############################################################################
         # TODO: Implement the forward pass for the three-layer convolutional net,  #
         # computing the class scores for X and storing them in the scores          #
@@ -123,8 +123,11 @@ class ThreeLayerConvNet(object):
         # cs231n/layer_utils.py in your implementation (already imported).         #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # conv - relu - 2x2 max pool - affine - relu - affine - softmax
 
-        pass
+        scores, cache["cr"] = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+        scores, cache["arelu"] = affine_relu_forward(scores, W2, b2)
+        scores, cache["affine2"] = affine_forward(scores, W3, b3)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -147,7 +150,15 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dx4 = softmax_loss(scores, y)
+        loss += sum(0.5 * self.reg * np.sum(W_tmp**2) for W_tmp in [W1, W2, W3])
+        dx3, grads["W3"], grads["b3"] = affine_backward(dx4, cache["affine2"])
+        dx2, grads["W2"], grads["b2"] = affine_relu_backward(dx3, cache["arelu"])
+        dx1, grads["W1"], grads["b1"] = conv_relu_pool_backward(dx2, cache["cr"])
+
+        grads["W3"] += self.reg * W3
+        grads["W2"] += self.reg * W2
+        grads["W1"] += self.reg * W1
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
