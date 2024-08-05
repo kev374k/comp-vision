@@ -916,8 +916,13 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # Your implementation should be very short; ours is less than five lines. #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    N, C, H, W = x.shape
+    # should be applied to each C feature channels over minibatch N, H, W
+    x = x.transpose(0, 2, 3, 1).reshape(N * H * W, C)
+    out, cache = batchnorm_forward(x, gamma, beta, bn_param)
 
-    pass
+    # reshape to the desired output
+    out = out.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -950,7 +955,11 @@ def spatial_batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = dout.shape
+
+    batch = dout.transpose(0, 2, 3, 1).reshape(N * H * W, C)
+    dx, dgamma, dbeta = batchnorm_backward_alt(batch, cache)
+    dx = dx.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -991,7 +1000,23 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = x.shape
+
+    # try to convert x into C separate batches
+    size = (N * G, int(C / G) * H * W)
+    x = x.reshape(size)
+
+    mu = np.mean(x, axis=1, keepdims=True)
+    xmu = x - mu
+    sq = xmu**2
+    var = np.mean(sq, axis=1, keepdims=True)
+    sqrtvar = np.sqrt(var + eps)
+    ivar = 1.0 / sqrtvar
+    xhat = xmu * ivar
+    xhat = xhat.reshape(N, C, H, W)
+    gammax = gamma * xhat + beta
+    out = gammax
+    cache = (size, xhat, gamma, xmu, ivar, sqrtvar, var, eps)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -1020,7 +1045,27 @@ def spatial_groupnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = dout.shape
+    size, xhat, gamma, xmu, ivar, sqrtvar, var, eps = cache
+
+    # (N * G, int(C / G) * H * W)
+
+    dbeta = np.sum(dout, axis=(0, 2, 3), keepdims=True)
+
+    dgamma = np.sum(dout * xhat, axis=(0, 2, 3), keepdims=True)
+
+    x_h = xhat.reshape(size)
+    dxhat = (dout * gamma).reshape(size)
+    print(dxhat.shape)
+
+    dx = (
+        dxhat
+        - np.mean(dxhat, axis=1, keepdims=True)
+        - x_h * np.mean(dxhat * x_h, axis=1, keepdims=True)
+    )
+
+    dx /= sqrtvar
+    dx = dx.reshape(N, C, H, W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
