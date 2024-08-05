@@ -65,6 +65,8 @@ class ThreeLayerConvNet(object):
 
         # conv - relu - 2x2 max pool - affine - relu - affine - softmax
 
+        # conv - relu - 2x2 max pool - affine - relu - affine - softmax
+
         C, H, W = input_dim
 
         # convolutional weights should be of size (F, C, HH, WW), bias -> (F, )
@@ -77,7 +79,7 @@ class ThreeLayerConvNet(object):
         # result is -> (N, F, H, W) -> (N, F, 0.5H, 0.5W)
         # hidden affine - (D, M), biases = (M, )
         self.params["W2"] = (
-            np.random.randn(0.25 * H * W * num_filters, hidden_dim) * weight_scale
+            np.random.randn(int(num_filters / 4 * H * W), hidden_dim) * weight_scale
         )
         self.params["b2"] = np.zeros((1, hidden_dim))
 
