@@ -40,13 +40,15 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        # pos represents the i_term 
+        # pos represents the i_term
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, embed_dim, 2).float() * (-math.log(10000.0) / embed_dim))
-        
+        div_term = torch.exp(
+            torch.arange(0, embed_dim, 2).float() * (-math.log(10000.0) / embed_dim)
+        )
+
         pe[0, :, 0::2] = torch.sin(position * div_term)  # Fill even indices
         pe[0, :, 1::2] = torch.cos(position * div_term)  # Fill odd indices
-        
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -173,9 +175,15 @@ class MultiHeadAttention(nn.Module):
         H = self.num_heads
 
         # Split and permute for multi-head attention
-        key = self.key(key).view(N, T, H, E // H).transpose(1, 2)   # key -> (N, H, T, head_dim)
-        query = self.query(query).view(N, S, H, E // H).transpose(1, 2)  # query -> (N, H, S, head_dim)
-        value = self.value(value).view(N, T, H, E // H).transpose(1, 2)  # value -> (N, H, T, head_dim)
+        key = (
+            self.key(key).view(N, T, H, E // H).transpose(1, 2)
+        )  # key -> (N, H, T, head_dim)
+        query = (
+            self.query(query).view(N, S, H, E // H).transpose(1, 2)
+        )  # query -> (N, H, S, head_dim)
+        value = (
+            self.value(value).view(N, T, H, E // H).transpose(1, 2)
+        )  # value -> (N, H, T, head_dim)
 
         # Compute attention scores: (N, H, S, head_dim) x (N, H, head_dim, T) -> (N, H, S, T)
         Y = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(E // H)
