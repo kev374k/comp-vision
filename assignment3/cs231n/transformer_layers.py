@@ -40,12 +40,13 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        # pos represents the j-term 
-        pos = torch.arange(max_len).unsqueeze(1)
-
-        # div_term represents the termt aht 
-        div_term = torch.exp(torch.arange(0, embed_dim, 2))
-
+        # pos represents the i_term 
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, embed_dim, 2).float() * (-math.log(10000.0) / embed_dim))
+        
+        pe[0, :, 0::2] = torch.sin(position * div_term)  # Fill even indices
+        pe[0, :, 1::2] = torch.cos(position * div_term)  # Fill odd indices
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -76,7 +77,8 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        output = x + self.pe[:, :S]
+        output = self.dropout(output)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -124,11 +126,9 @@ class MultiHeadAttention(nn.Module):
         self.value = nn.Linear(embed_dim, embed_dim)
         self.proj = nn.Linear(embed_dim, embed_dim)
 
-        self.attn_drop = nn.Dropout(dropout)
-
-        self.n_head = num_heads
-        self.emd_dim = embed_dim
-        self.head_dim = self.emd_dim // self.n_head
+        self.num_heads = num_heads
+        self.dropout = nn.Dropout(p=dropout)
+        self.scale = math.sqrt(embed_dim / num_heads)
 
     def forward(self, query, key, value, attn_mask=None):
         """
@@ -170,23 +170,22 @@ class MultiHeadAttention(nn.Module):
         #     function masked_fill may come in handy.                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        H = self.n_head
-        head_dim = self.emd_dim // H  # Assuming E is the embedding dimension, and H is the number of heads
+        H = self.num_heads
 
         # Split and permute for multi-head attention
-        key = self.key(key).view(N, T, H, head_dim).transpose(1, 2)   # key -> (N, H, T, head_dim)
-        query = self.query(query).view(N, S, H, head_dim).transpose(1, 2)  # query -> (N, H, S, head_dim)
-        value = self.value(value).view(N, T, H, head_dim).transpose(1, 2)  # value -> (N, H, T, head_dim)
+        key = self.key(key).view(N, T, H, E // H).transpose(1, 2)   # key -> (N, H, T, head_dim)
+        query = self.query(query).view(N, S, H, E // H).transpose(1, 2)  # query -> (N, H, S, head_dim)
+        value = self.value(value).view(N, T, H, E // H).transpose(1, 2)  # value -> (N, H, T, head_dim)
 
         # Compute attention scores: (N, H, S, head_dim) x (N, H, head_dim, T) -> (N, H, S, T)
-        Y = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(head_dim)
+        Y = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(E // H)
 
         # Apply attention mask if provided
         if attn_mask is not None:
             Y = Y.masked_fill(attn_mask == 0, float("-inf"))
 
         # Apply softmax to get attention weights, then multiply by value: (N, H, S, T) x (N, H, T, head_dim) -> (N, H, S, head_dim)
-        Y = torch.matmul(self.attn_drop(F.softmax(Y, dim=-1)), value)
+        Y = torch.matmul(self.dropout(F.softmax(Y, dim=-1)), value)
 
         # Reshape the output to the original size and apply the projection: (N, S, E)
         output = self.proj(Y.transpose(1, 2).contiguous().view(N, S, E))
